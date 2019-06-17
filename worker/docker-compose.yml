@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  worker:
+    restart: on-failure
+    build: .
+    environment:
+      REDIS_CON_TYPE: "tcp"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"

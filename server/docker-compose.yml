@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  server:
+    restart: on-failure
+    build: .
+    environment:
+      PGHOST: "db"
+      PGPORT: "5432"
+      PGUSER: "postgres"
+      PGPASSWORD: ""
+      PGDATABASE: "postgres"
+      PGSSLMODE: "disable"
+      REDIS_CON_TYPE: "tcp"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      HTTP_PORT: "5000"
+    ports:
+      - "5000:5000"
+  db:
+    image: "postgres:latest"
+    ports: 
+      - "5432:5432"
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
