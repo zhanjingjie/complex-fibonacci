@@ -37,15 +37,14 @@ func newRedisClient() *redis.Conn {
 func newPostgreClient() *sql.DB {
 	// All of the parameters needed to connect to Postgre.
 	pgUser := os.Getenv("PGUSER")
-	// You should have a password! This is for testing only.
-	// pgPassword := os.Getenv("PGPASSWORD")
+	pgPassword := os.Getenv("PGPASSWORD")
 	pgHost := os.Getenv("PGHOST")
 	pgPort := os.Getenv("PGPORT")
 	pgDatabase := os.Getenv("PGDATABASE")
 	pgSSLMode := os.Getenv("PGSSLMODE")
 
-	connStr := fmt.Sprintf("user=%s dbname=%s host=%s port=%s sslmode=%s",
-		pgUser, pgDatabase, pgHost, pgPort, pgSSLMode)
+	connStr := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=%s",
+		pgUser, pgPassword, pgDatabase, pgHost, pgPort, pgSSLMode)
 	fmt.Println("Postgres connection string:", connStr)
 
 	// Create a postgres db connection.
@@ -165,19 +164,33 @@ func submitFibIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // Start Redis client connection.
 // R1 Redis client is for Redis pub/sub
-var r1 = *newRedisClient()
+var r1 redis.Conn
 
 // R2 Redis client is for Redis get/set
-var r2 = *newRedisClient()
+var r2 redis.Conn
 
 // Start Postgre client connection.
-var db = newPostgreClient()
+var db sql.DB
+
+// Create the initial table in Postgres.
+func setupPostgres() {
+	_, err := db.Exec("CREATE TABLE IF NOT EXISTS values (number int);")
+	if err != nil {
+		panic(err)
+	}
+}
 
 func main() {
+	// Initialize connection clients.
+	r1 := *newRedisClient()
 	defer r1.Close()
+	r2 := *newRedisClient()
 	defer r2.Close()
+	db = *newPostgreClient()
 	defer db.Close()
+	setupPostgres()
 
+	// Set up route handling.
 	http.HandleFunc("/", helloWorldHandler)
 	http.HandleFunc("/values/all", fetchPostgresDataHandler)
 	http.HandleFunc("/values/current", fetchRedisDataHandler)

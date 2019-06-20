@@ -1,0 +1,50 @@
+version: '3'
+
+services:
+  api:
+    restart: on-failure
+    build:
+      context: ./server
+    environment:
+      PGHOST: "db"
+      PGPORT: "5432"
+      PGUSER: "postgres"
+      PGPASSWORD: "postgres_password"
+      PGDATABASE: "postgres"
+      PGSSLMODE: "disable"
+      REDIS_CON_TYPE: "tcp"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      HTTP_PORT: "5000"
+    depends_on: 
+      - db
+      - redis
+    links:
+      - db
+      - redis
+  worker:
+    restart: on-failure
+    build: 
+      context: ./worker
+    environment:
+      REDIS_CON_TYPE: "tcp"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+  client:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      - /app/node_modules
+      - ./client:/app
+  db:
+    image: "postgres:latest"
+  redis:
+    image: "redis:latest"
+  nginx:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
+    ports:
+      - "3050:80"

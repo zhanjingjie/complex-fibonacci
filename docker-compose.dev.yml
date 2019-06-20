@@ -1,11 +1,11 @@
 version: '3'
 
 services:
-  server:
+  api:
     restart: on-failure
     build:
       dockerfile: Dockerfile.dev
-      context: .
+      context: ./server
     environment:
       PGHOST: "db"
       PGPORT: "5432"
@@ -18,15 +18,32 @@ services:
       REDIS_PORT: "6379"
       HTTP_PORT: "5000"
     ports:
-      - "5000:5000"
       - "2345:2345"
     security_opt:
       - "seccomp:unconfined"
+  worker:
+    restart: on-failure
+    build: 
+      context: ./worker
+    environment:
+      REDIS_CON_TYPE: "tcp"
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+  client:
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./client
+    volumes:
+      - /app/node_modules
+      - ./client:/app
   db:
     image: "postgres:latest"
-    ports: 
-      - "5432:5432"
   redis:
     image: "redis:latest"
+  nginx:
+    restart: always
+    build:
+      dockerfile: Dockerfile.dev
+      context: ./nginx
     ports:
-      - "6379:6379"
+      - "3050:80"
