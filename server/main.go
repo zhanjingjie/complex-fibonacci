@@ -91,26 +91,42 @@ func fetchPostgresDataHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	rows := <-ch
-	fmt.Fprint(w, rows)
+	rowsJSON, err := json.Marshal(rows)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(w, "%s", rowsJSON)
 }
 
 // Return all of the records in Redis "values" keyset.
+// Send back response with a JSON encoded object.
 func fetchRedisDataHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 
 	// Use Goroutine to make fetching Redis data parallel.
-	ch := make(chan interface{}, 1)
+	ch := make(chan map[string]string, 1)
 	go func() {
-		values, err := r2.Do("HGETALL", "values")
+		result, err := r2.Do("HGETALL", "values")
 		if err != nil {
 			panic(err)
 		}
 
-		ch <- values
+		// Parse the HGETALL result to a map.
+		vs, err := redis.StringMap(result, err)
+		if err != nil {
+			panic(err)
+		}
+
+		ch <- vs
 	}()
 
 	values := <-ch
-	fmt.Fprint(w, values)
+	valuesJSON, err := json.Marshal(values)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Fprintf(w, "%s", valuesJSON)
 }
 
 type message struct {
@@ -118,7 +134,7 @@ type message struct {
 }
 
 // Handles submitting a Fibonacci index, and let the worker calculate the value.
-// curl -d '{"index":"5"}' -X POST -i -H "Content-Type:application/json" http://localhost:5000/values
+// curl -d '{"index":"5"}' -X POST -i -H "Content-Type:application/json" http://localhost:3050/values
 // By default, React Axios module sends body data in application/json content type.
 func submitFibIndexHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
@@ -164,13 +180,13 @@ func submitFibIndexHandler(w http.ResponseWriter, r *http.Request) {
 
 // Start Redis client connection.
 // R1 Redis client is for Redis pub/sub
-var r1 redis.Conn
+var r1 = *newRedisClient()
 
 // R2 Redis client is for Redis get/set
-var r2 redis.Conn
+var r2 = *newRedisClient()
 
 // Start Postgre client connection.
-var db sql.DB
+var db = newPostgreClient()
 
 // Create the initial table in Postgres.
 func setupPostgres() {
@@ -181,12 +197,8 @@ func setupPostgres() {
 }
 
 func main() {
-	// Initialize connection clients.
-	r1 := *newRedisClient()
 	defer r1.Close()
-	r2 := *newRedisClient()
 	defer r2.Close()
-	db = *newPostgreClient()
 	defer db.Close()
 	setupPostgres()
 

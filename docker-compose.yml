@@ -16,12 +16,6 @@ services:
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
       HTTP_PORT: "5000"
-    depends_on: 
-      - db
-      - redis
-    links:
-      - db
-      - redis
   worker:
     restart: on-failure
     build: 
