@@ -68,6 +68,7 @@ func helloWorldHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Return all the records in the "values" table in Postgres.
+// Send back response with a JSON encoded array.
 func fetchPostgresDataHandler(w http.ResponseWriter, r *http.Request) {
 	enableCors(&w)
 

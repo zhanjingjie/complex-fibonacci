@@ -53,25 +53,30 @@ func main() {
 	c1.Do("SUBSCRIBE", "insert")
 	// Listening to the channel and receive the message published on the channel.
 	// c1.Receive() will blocking wait for the message, once a message is received it will exit.
-	rawMsg, err := c1.Receive()
-	if err != nil {
-		panic(err)
+	for {
+		rawMsg, err := c1.Receive()
+		if err != nil {
+			panic(err)
+		}
+
+		// Once a message is received, start a new goroutine to handle the message.
+		go func() {
+			// Parse the message, and get the integer index.
+			msgArr := rawMsg.([]interface{})
+			channel := string(msgArr[1].([]byte))
+			message := string(msgArr[2].([]byte))
+			fmt.Println("Message received:", message, "from channel:", channel)
+			index, err := strconv.Atoi(message)
+			if err != nil {
+				panic(err)
+			}
+
+			// Calculate the fib number corresponding to the index.
+			result := fib(index)
+			fmt.Println("The result of fib calculation is:", result)
+
+			// Then write the index-result key-value pair to Redis.
+			c2.Do("HSET", "values", index, result)
+		}()
 	}
-
-	// Parse the message, and get the integer index.
-	msgArr := rawMsg.([]interface{})
-	channel := string(msgArr[1].([]byte))
-	message := string(msgArr[2].([]byte))
-	fmt.Println("Message received:", message, "from channel:", channel)
-	index, err := strconv.Atoi(message)
-	if err != nil {
-		panic(err)
-	}
-
-	// Calculate the fib number corresponding to the index.
-	result := fib(index)
-	fmt.Println("The result of fib calculation is:", result)
-
-	// Then write the index-result key-value pair to Redis.
-	c2.Do("HSET", "values", index, result)
 }
