@@ -4,7 +4,6 @@ services:
   api:
     restart: on-failure
     build:
-      dockerfile: Dockerfile.dev
       context: ./server
     environment:
       PGHOST: "db"
@@ -18,9 +17,7 @@ services:
       REDIS_PORT: "6379"
       HTTP_PORT: "5000"
     ports:
-      - "2345:2345"
-    security_opt:
-      - "seccomp:unconfined"
+      - "5000:5000"
   worker:
     restart: on-failure
     build: 

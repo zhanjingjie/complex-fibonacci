@@ -3,11 +3,17 @@ version: '3'
 services:
   worker:
     restart: on-failure
-    build: .
+    build:
+      dockerfile: Dockerfile.dev
+      context: .
     environment:
       REDIS_CON_TYPE: "tcp"
       REDIS_HOST: "redis"
       REDIS_PORT: "6379"
+    ports:
+      - "2345:2345"
+    security_opt:
+      - "seccomp:unconfined"
   redis:
     image: "redis:latest"
     ports:

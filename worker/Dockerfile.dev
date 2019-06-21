@@ -1,0 +1,6 @@
+FROM golang:latest
+RUN go get -v -u github.com/go-delve/delve/cmd/dlv
+
+WORKDIR /go/src/app
+ADD ./ ./
+CMD ["dlv", "debug", "--headless", "--listen=:2345", "--log", "--api-version=2"]
