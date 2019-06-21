@@ -1,0 +1,22 @@
+sudo: required
+services:
+  - docker
+before_install:
+  # TODO: Add tests to all components. 
+  - docker build -t jjzhan/react-test -f ./client/Dockerfile.dev ./client
+script:
+  # TODO: Use docker compose to run tests for all components. 
+  - docker run -e CI=true jjzhan/react-test npm run test -- --coverage
+after_success:
+  # Build the images.
+  - docker build -t jjzhan/fibonacci-client ./client
+  - docker build -t jjzhan/fibonacci-nginx ./nginx
+  - docker build -t jjzhan/fibonacci-server ./server
+  - docker build -t jjzhan/fibonacci-worker ./worker
+  # Login to docker CLI.
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+  # Push the images to Docker Hub.
+  - docker push jjzhan/fibonacci-client
+  - docker push jjzhan/fibonacci-nginx
+  - docker push jjzhan/fibonacci-server
+  - docker push jjzhan/fibonacci-worker
